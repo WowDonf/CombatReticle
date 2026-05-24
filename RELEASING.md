@@ -33,8 +33,25 @@ packager](https://github.com/BigWigsMods/packager).
 
 ## Building locally for testing
 
+### Prerequisites
+
+The packager shells out to several tools. Install them once:
+
+- **git** — pulls the repo info embedded in the package.
+- **subversion** (`svn`) — most WoW libraries listed in `.pkgmeta` live on
+  SVN hosts. macOS removed it from the OS; install with
+  `brew install subversion`.
+- **zip** — final archive step. Pre-installed on macOS/Linux.
+- **curl** — pre-installed on macOS/Linux. The CI runner has the same.
+- **pandoc** *(optional)* — only needed if you ever switch the changelog
+  to a non-Markdown format. `brew install pandoc`.
+
+### Run the build
+
+The packager script lives behind a GitHub redirect, so curl needs `-L`:
+
 ```sh
-curl -sSf https://github.com/BigWigsMods/packager/raw/master/release.sh | bash
+curl -sSfL https://github.com/BigWigsMods/packager/raw/master/release.sh | bash
 ```
 
 The resulting zip lands in `.release/`. Drop it into

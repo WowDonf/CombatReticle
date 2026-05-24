@@ -42,6 +42,19 @@ ns.RETICLES = {
     { id = 18, name = "Vertical Arrows", texture = "Interface\\AddOns\\CombatReticle\\Textures\\reticle_18_vert_arrows.tga" },
     { id = 19, name = "Ring + Dot",      texture = "Interface\\AddOns\\CombatReticle\\Textures\\reticle_19_ring_dot.tga" },
     { id = 20, name = "Corner Arrows",   texture = "Interface\\AddOns\\CombatReticle\\Textures\\reticle_20_corner_arrows.tga" },
+    -- Modern chevron set + two icon variants (21-30). Sharp polygonal
+    -- silhouettes with subtle axial brightness gradients; no hard
+    -- outline so the color picker tints them cleanly.
+    { id = 21, name = "Down Chevron",                texture = "Interface\\AddOns\\CombatReticle\\Textures\\reticle_21_down_chevron.tga" },
+    { id = 22, name = "Up Chevron",                  texture = "Interface\\AddOns\\CombatReticle\\Textures\\reticle_22_up_chevron.tga" },
+    { id = 23, name = "Triple Down Chevrons",        texture = "Interface\\AddOns\\CombatReticle\\Textures\\reticle_23_triple_down_chevrons.tga" },
+    { id = 24, name = "Triple Up Chevrons",          texture = "Interface\\AddOns\\CombatReticle\\Textures\\reticle_24_triple_up_chevrons.tga" },
+    { id = 25, name = "Skull",                       texture = "Interface\\AddOns\\CombatReticle\\Textures\\reticle_25_skull.tga" },
+    { id = 26, name = "Horizontal Chevron Pair",     texture = "Interface\\AddOns\\CombatReticle\\Textures\\reticle_26_horizontal_pair.tga" },
+    { id = 27, name = "Shamrock",                    texture = "Interface\\AddOns\\CombatReticle\\Textures\\reticle_27_shamrock.tga" },
+    { id = 28, name = "Converging Triple Chevrons",  texture = "Interface\\AddOns\\CombatReticle\\Textures\\reticle_28_converging_triple.tga" },
+    { id = 29, name = "Sharp Down Chevron",          texture = "Interface\\AddOns\\CombatReticle\\Textures\\reticle_29_sharp_down_chevron.tga" },
+    { id = 30, name = "Sharp Up Chevron",            texture = "Interface\\AddOns\\CombatReticle\\Textures\\reticle_30_sharp_up_chevron.tga" },
 }
 
 local function GetReticleById(id)
@@ -345,6 +358,10 @@ local function ShowColorPicker()
         if ns.API.RefreshOptions then ns.API.RefreshOptions() end
     end
 
+    -- Stock ColorPickerFrame has no Default-button logic - it stores
+    -- info.extraInfo but never reads it. (Some third-party addons add a
+    -- Default button that uses their own API.) The "Reset to white"
+    -- button in the options window is the portable answer.
     local info = {
         swatchFunc = OnSwatch, opacityFunc = OnOpacity, cancelFunc = OnCancel,
         hasOpacity = true, opacity = prevA,
@@ -360,6 +377,14 @@ local function ShowColorPicker()
     end
 end
 ns.API.ShowColorPicker = ShowColorPicker
+
+local function ResetColor()
+    CombatReticleDB.colorR, CombatReticleDB.colorG, CombatReticleDB.colorB = 1, 1, 1
+    CombatReticleDB.alpha = 1
+    ns.API.Refresh()
+    if ns.API.RefreshOptions then ns.API.RefreshOptions() end
+end
+ns.API.ResetColor = ResetColor
 
 -- ---------------------------------------------------------------------------
 -- Reset to defaults
@@ -486,7 +511,7 @@ SlashCmdList.COMBATRETICLE = function(input)
     if cmd == "help" then
         Msg("commands:")
         print("  |cffffff00/cr|r                open options")
-        print("  |cffffff00/cr reticle <1-20>|r choose a preset")
+        print("  |cffffff00/cr reticle <1-" .. #ns.RETICLES .. ">|r choose a preset")
         print("  |cffffff00/cr icon <name>|r    use a built-in WoW icon (Interface\\Icons\\<name>)")
         print("  |cffffff00/cr icon clear|r     revert to preset")
         print("  |cffffff00/cr size <n>|r       size in pixels (16-256)")
@@ -494,6 +519,7 @@ SlashCmdList.COMBATRETICLE = function(input)
         print("  |cffffff00/cr minimap on|off|r show minimap icon")
         print("  |cffffff00/cr list|r           list all reticle presets")
         print("  |cffffff00/cr color|r          open color picker")
+        print("  |cffffff00/cr color white|r    reset tint to white")
         print("  |cffffff00/cr reset|r          restore defaults")
         return
     end
@@ -537,6 +563,10 @@ SlashCmdList.COMBATRETICLE = function(input)
         return
 
     elseif cmd == "color" then
+        local r = rest:lower()
+        if r == "white" or r == "default" or r == "reset" then
+            ResetColor(); Msg("tint reset to white."); return
+        end
         ShowColorPicker(); return
 
     elseif cmd == "reset" then
