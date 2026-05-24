@@ -33,6 +33,7 @@ ignore:
   - .github
   - .gitignore
   - assets
+  - tools
   - CurseForge-description.md
   - README.md
   - RELEASING.md

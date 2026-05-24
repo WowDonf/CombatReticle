@@ -1,5 +1,15 @@
 # CombatReticle changelog
 
+## 1.1.0
+
+### New textures
+
+- Modern chevron set (slots 21-30): Down Chevron, Up Chevron, Triple
+  Down Chevrons, Triple Up Chevrons, Skull, Horizontal Chevron Pair,
+  Shamrock, Converging Triple Chevrons, Sharp Down Chevron, Sharp Up
+  Chevron. Sharp polygonal silhouettes with subtle axial gradient
+  shading; no baked-in outline so the color picker tints them cleanly.
+
 ## 1.0.0
 
 Initial release.

@@ -260,11 +260,11 @@ local function MarkChanged()
 end
 
 -- ---------------------------------------------------------------------------
--- Reticle icon grid - 20 buttons in a 5x4 layout. Tooltip on hover, yellow
+-- Reticle icon grid - 30 buttons in a 6x5 layout. Tooltip on hover, yellow
 -- border highlight on the currently selected one.
 -- ---------------------------------------------------------------------------
 local function AddIconGrid()
-    local COLS    = 5
+    local COLS    = 6
     local ICON    = 48
     local PAD     = 4
     local rows    = math.ceil(#ns.RETICLES / COLS)
@@ -412,6 +412,23 @@ colorSwatch.Refresh = function()
     colorSwatch:SetColorTexture(db().colorR or 1, db().colorG or 1, db().colorB or 1, 1)
 end
 widgets[#widgets + 1] = colorSwatch
+
+local resetColorBtn = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
+resetColorBtn:SetPoint("LEFT", colorSwatch, "RIGHT", 12, 0)
+resetColorBtn:SetSize(130, 24)
+resetColorBtn:SetText("Reset to white")
+resetColorBtn:SetScript("OnClick", function()
+    if ns.API.ResetColor then ns.API.ResetColor() end
+    if ns.API.PreviewReticle then ns.API.PreviewReticle(4) end
+end)
+resetColorBtn:SetScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText("Reset to white", 1, 1, 1)
+    GameTooltip:AddLine("Sets tint back to pure white (RGB 255,255,255) and opacity to 1.0.",
+        0.8, 0.8, 0.8, true)
+    GameTooltip:Show()
+end)
+resetColorBtn:SetScript("OnLeave", HideTooltip)
 
 -- ===========================================================================
 -- Position section

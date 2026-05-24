@@ -5,22 +5,22 @@ Center-screen reticle for WoW Midnight (patch 12.x).
 ## What it does
 
 Draws one customizable texture at the center of your screen as an aim
-point for third-person / action-cam play. 20 bundled designs, or use any
+point for third-person / action-cam play. 30 bundled designs, or use any
 built-in WoW icon.
 
 ## Features
 
-- 20 bundled reticle textures: crosshair, brackets, target rings,
-  diamond, hexagon, star, triangle, X, plus 12 inward-pointing chevron
-  designs.
+- 30 bundled reticle textures: 10 standard shapes (crosshair, brackets,
+  target rings, diamond, hexagon, star, triangle, X, double / quad
+  arrows), 10 inward-pointing and minimal designs (chevrons, gap
+  crosshair, side arrows, small square, filled dot, ring + dot, corner
+  arrows), and a modern chevron set (singles, triples, converging
+  pairs) with a skull and shamrock icon.
 - Use any `Interface\Icons` texture as the reticle instead.
 - Blizzard color picker (wheel, RGB, hex, opacity). Cancel restores the
   previous color.
 - Sliders with stepper buttons for size (16-256 px), opacity, and X/Y
   offset. Click steppers to nudge, hold to repeat.
-- Floating, draggable options window. Doesn't sit on top of the reticle
-  while you configure it.
-- Visual 5x4 icon grid for picking a reticle.
 - Show-only-in-combat (off by default) and hide-on-vehicle toggles.
 - Minimap button + addon compartment entry. Left-click options,
   right-click combat-only toggle.
@@ -39,14 +39,15 @@ Search "CombatReticle" on CurseForge or Wago, or copy the
 | Command                  | Effect                                       |
 | ------------------------ | -------------------------------------------- |
 | `/cr`                    | open the options window                      |
-| `/cr reticle <1-20>`     | pick a preset by number                      |
+| `/cr reticle <1-30>`     | pick a preset by number                      |
 | `/cr icon <name>`        | use `Interface\Icons\<name>` as the reticle  |
 | `/cr icon clear`         | revert to the selected preset                |
 | `/cr size <n>`           | size in pixels (16-256)                      |
 | `/cr color`              | open the color picker                        |
+| `/cr color white`        | reset tint to white                          |
 | `/cr combat on` / `off`  | toggle combat-only                           |
 | `/cr minimap on` / `off` | show / hide the minimap button               |
-| `/cr list`               | list all 20 presets                          |
+| `/cr list`               | list all 30 presets                          |
 | `/cr reset`              | reset to defaults (with confirmation)        |
 | `/cr help`               | list all commands                            |
 
