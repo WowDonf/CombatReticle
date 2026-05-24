@@ -1,0 +1,28 @@
+# Builds and uploads a release when a tag matching vX.Y.Z is pushed.
+# Same workflow the OutOfRange repo uses; runs the BigWigs packager, which
+# reads .pkgmeta and produces a CurseForge/Wago/GitHub-ready zip.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Package and upload
+        uses: BigWigsMods/packager@v2
+        env:
+          CF_API_KEY:      ${{ secrets.CF_API_KEY }}
+          WAGO_API_TOKEN:  ${{ secrets.WAGO_API_TOKEN }}
+          GITHUB_OAUTH:    ${{ secrets.GITHUB_TOKEN }}
