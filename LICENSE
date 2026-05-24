@@ -1,0 +1,13 @@
+Copyright (c) 2026 WowDonf. All rights reserved.
+
+This addon (the source files committed under this repository, excluding the
+contents of the Libs/ subdirectory) is distributed for personal use through
+CurseForge, Wago, and GitHub. You may install, run, and modify it locally
+for your own use. You may not redistribute modified or unmodified copies,
+sell it, or include it in another distribution without prior written
+permission from the copyright holder.
+
+The libraries under Libs/ (LibStub, CallbackHandler-1.0, LibDataBroker-1.1,
+LibDBIcon-1.0) are distributed under their own respective licenses by their
+original authors and are not covered by this notice. See the source files
+themselves for the applicable license text.

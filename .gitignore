@@ -1,0 +1,14 @@
+# BigWigs packager build artifacts
+.release/
+release/
+*.zip
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.code-workspace
