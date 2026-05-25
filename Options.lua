@@ -466,7 +466,18 @@ AddCheckbox("Show only in combat",
 AddCheckbox("Hide on vehicle / taxi",
     "Hide the reticle while riding a taxi, on a vehicle, or in a quest puppet.",
     function() return db().hideOnVehicle end,
-    function(v) CombatReticleDB.hideOnVehicle = v; MarkChanged() end)
+    function(v)
+        CombatReticleDB.hideOnVehicle = v
+        if ns.API.ApplyHideRule then ns.API.ApplyHideRule() else MarkChanged() end
+    end)
+
+AddCheckbox("Hide while mounted",
+    "Hide the reticle while on a mount.",
+    function() return db().hideWhileMounted end,
+    function(v)
+        CombatReticleDB.hideWhileMounted = v
+        if ns.API.ApplyHideRule then ns.API.ApplyHideRule() else MarkChanged() end
+    end)
 
 -- ===========================================================================
 -- Minimap section

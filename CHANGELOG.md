@@ -1,5 +1,16 @@
 # CombatReticle changelog
 
+## 1.2.0
+
+### Hide-while-mounted
+
+- New "Hide while mounted" toggle (on by default). Regular mounts aren't
+  vehicles in the WoW API, so the existing "Hide on vehicle / taxi"
+  rule never covered them.
+- Toggling either hide rule while currently mounted / on a vehicle now
+  takes effect immediately instead of being held back by the options
+  window's force-show and preview pulse.
+
 ## 1.1.0
 
 ### New textures
