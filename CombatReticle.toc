@@ -2,7 +2,7 @@
 ## Title: CombatReticle
 ## Notes: Center-screen reticle with 30 textures, color tinting, combat-only mode, custom WoW icons, and a minimap button.
 ## Author: Donf
-## Version: 1.1.0
+## Version: 1.2.0
 ## X-Curse-Project-ID: 1552028
 ## X-Wago-ID: ZKxZk3Nk
 ## SavedVariables: CombatReticleDB

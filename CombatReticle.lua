@@ -83,6 +83,7 @@ ns.DEFAULTS = {
     -- not be told "go enter combat first to see what you bought".
     combatOnly         = false,
     hideOnVehicle      = true,
+    hideWhileMounted   = true,
     -- LibDBIcon persists its angle and hide flag here.
     minimap            = { hide = false, minimapPos = 220 },
     -- Floating options window position; restored on each open. Defaults to
@@ -130,6 +131,7 @@ ns.API.GetActiveTexture = GetActiveTexture
 local reticle
 local inCombat  = false
 local onVehicle = false
+local mounted   = false
 
 local function EnsureFrame()
     if reticle then return reticle end
@@ -192,6 +194,7 @@ local function ShouldShow()
     if PreviewActive() then return true end
     if optionsOpen then return true end
     if onVehicle and db.hideOnVehicle then return false end
+    if mounted and db.hideWhileMounted then return false end
     if db.combatOnly and not inCombat then return false end
     return true
 end
@@ -208,6 +211,25 @@ local function Refresh()
 end
 ns.API.Refresh = Refresh
 
+-- Called by visibility-rule checkboxes (hideOnVehicle, hideWhileMounted) so
+-- toggling gives instant feedback while you're mounted/on a vehicle. If the
+-- rule is currently met, hide immediately and cancel any in-flight preview;
+-- otherwise fall back to the normal preview+refresh path used for visual
+-- changes.
+ns.API.ApplyHideRule = function()
+    if not reticle then return end
+    local db = CombatReticleDB
+    local hide = (onVehicle and db.hideOnVehicle)
+              or (mounted and db.hideWhileMounted)
+    if hide then
+        previewUntil = 0
+        reticle:Hide()
+    else
+        Refresh()
+        PreviewReticle(4)
+    end
+end
+
 -- Safety ticker. Every second, re-poll the combat / vehicle state in case
 -- we missed a UNIT_ENTERED_VEHICLE, UNIT_EXITED_VEHICLE, PLAYER_REGEN_*,
 -- or similar event during a loading screen or camera transition. If the
@@ -218,8 +240,9 @@ local function SafetyTick()
     if not reticle then return end
     local newInCombat  = InCombatLockdown() or false
     local newOnVehicle = UnitInVehicle("player") or false
-    if newInCombat ~= inCombat or newOnVehicle ~= onVehicle then
-        inCombat, onVehicle = newInCombat, newOnVehicle
+    local newMounted   = IsMounted() or false
+    if newInCombat ~= inCombat or newOnVehicle ~= onVehicle or newMounted ~= mounted then
+        inCombat, onVehicle, mounted = newInCombat, newOnVehicle, newMounted
         Refresh()
         return
     end
@@ -470,6 +493,7 @@ f:SetScript("OnEvent", function(self, event, arg1)
     elseif event == "PLAYER_LOGIN" or event == "PLAYER_ENTERING_WORLD" then
         inCombat  = InCombatLockdown() or false
         onVehicle = UnitInVehicle("player") or false
+        mounted   = IsMounted() or false
         Refresh()
 
     elseif event == "PLAYER_REGEN_DISABLED" then
@@ -490,6 +514,7 @@ f:SetScript("OnEvent", function(self, event, arg1)
         -- combat or a vehicle (loading screens are notorious for this).
         inCombat  = InCombatLockdown() or false
         onVehicle = UnitInVehicle("player") or false
+        mounted   = IsMounted() or false
         Refresh()
     end
 end)
