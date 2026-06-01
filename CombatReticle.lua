@@ -481,7 +481,7 @@ f:RegisterEvent("DISPLAY_SIZE_CHANGED")
 f:RegisterEvent("LOADING_SCREEN_DISABLED")
 f:RegisterEvent("PLAYER_MOUNT_DISPLAY_CHANGED")
 
-f:SetScript("OnEvent", function(self, event, arg1)
+f:SetScript("OnEvent", function(_, event, arg1)
     if event == "ADDON_LOADED" then
         if arg1 == addonName then
             CombatReticleDB = CombatReticleDB or {}

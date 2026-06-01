@@ -15,7 +15,7 @@
 local _, ns = ...
 
 -- Forward declarations
-local RefreshAll, reticleGrid, currentLabel, ShowOptionsWindow, optionsFrame
+local RefreshAll, currentLabel, ShowOptionsWindow, optionsFrame
 
 -- ---------------------------------------------------------------------------
 -- The movable window itself
@@ -349,7 +349,7 @@ AddDescription("Click a reticle below to select it. The highlighted icon is "
     .. "the current selection. Or use a built-in WoW icon with the button "
     .. "below the grid.")
 
-reticleGrid = AddIconGrid()
+AddIconGrid()
 
 -- "Current: <name>" status line under the grid - updated on every Refresh.
 do
