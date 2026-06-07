@@ -394,6 +394,15 @@ def tri(tip, direction, depth, half_w):
             (base[0] + sx * half_w, base[1] + sy * half_w)]
 
 
+# Inner-tip x-positions matched to preset #6 (Double Side Arrows): the two
+# arrows point inward to x=26 / x=38, leaving an ~11px clear gap at center.
+# Sharp-tipped designs land their content edge right at these columns; the
+# swept-arm designs sit 2px wider (SL/SR) to offset their flat tip's
+# anti-aliased spread, so their visible gap matches too.
+CL, CR = 26, 39
+SL, SR = 24, 41
+
+
 # --- 31: feathered (fletched) arrows -------------------------------------
 def _feathered_arrow_parts(tip, direction, length, fill):
     dx, dy = direction
@@ -421,10 +430,10 @@ def _feathered_arrow_parts(tip, direction, length, fill):
 
 def feathered_pair():
     parts = []
-    parts += _feathered_arrow_parts((28, 32), (1, 0), 21,
-                                    fill_axial((28, 32), (1, 0), 21, near=0.60, far=1.00))
-    parts += _feathered_arrow_parts((36, 32), (-1, 0), 21,
-                                    fill_axial((36, 32), (-1, 0), 21, near=0.60, far=1.00))
+    parts += _feathered_arrow_parts((CL, 32), (1, 0), 21,
+                                    fill_axial((CL, 32), (1, 0), 21, near=0.60, far=1.00))
+    parts += _feathered_arrow_parts((CR, 32), (-1, 0), 21,
+                                    fill_axial((CR, 32), (-1, 0), 21, near=0.60, far=1.00))
     return render(parts)
 
 
@@ -442,10 +451,10 @@ def swept_pair():
     # Tips sit ~12px apart with the arms swept outward, so the two sides
     # read as a clean ">  <" pair rather than crossing into an X.
     parts = []
-    parts += _swept_arms((26, 32), (1, 0), 15, 0.70,
-                         fill_axial((26, 32), (1, 0), 13, near=0.60, far=1.00))
-    parts += _swept_arms((38, 32), (-1, 0), 15, 0.70,
-                         fill_axial((38, 32), (-1, 0), 13, near=0.60, far=1.00))
+    parts += _swept_arms((SL, 32), (1, 0), 15, 0.70,
+                         fill_axial((SL, 32), (1, 0), 13, near=0.60, far=1.00))
+    parts += _swept_arms((SR, 32), (-1, 0), 15, 0.70,
+                         fill_axial((SR, 32), (-1, 0), 13, near=0.60, far=1.00))
     return render(parts)
 
 
@@ -453,8 +462,8 @@ def swept_pair():
 def triangle_stack_pair():
     parts = []
     # (tip_x, depth, half_w, brightness) - leading (toward center) brightest.
-    right = [(12, 7, 7, 0.55), (21, 8, 8, 0.78), (31, 9, 9, 1.00)]
-    left  = [(52, 7, 7, 0.55), (43, 8, 8, 0.78), (33, 9, 9, 1.00)]
+    right = [(12, 7, 7, 0.55), (19, 8, 8, 0.78), (CL, 9, 9, 1.00)]
+    left  = [(52, 7, 7, 0.55), (45, 8, 8, 0.78), (CR, 9, 9, 1.00)]
     for tx, depth, hw, b in right:
         parts.append((tri((tx, 32), (1, 0), depth, hw), fill_uniform(b)))
     for tx, depth, hw, b in left:
@@ -475,10 +484,10 @@ def _tri_sdf(p, tip, direction, depth, half_w):
 def hollow_pair():
     line = 1.7  # wall thickness
     arrows = [
-        ((20, 32), (1, 0), 11, 11),
-        ((30, 32), (1, 0), 11, 11),
-        ((44, 32), (-1, 0), 11, 11),
-        ((34, 32), (-1, 0), 11, 11),
+        ((16, 32), (1, 0), 11, 11),
+        ((CL, 32), (1, 0), 11, 11),
+        ((48, 32), (-1, 0), 11, 11),
+        ((CR, 32), (-1, 0), 11, 11),
     ]
 
     def sdf(p):
@@ -499,9 +508,9 @@ def hollow_pair():
 def double_swept_pair():
     # Leading tips kept ~12px apart so the inner pair stays a ">  <", not an X.
     parts = []
-    for tx, b in [(17, 0.62), (26, 1.00)]:
+    for tx, b in [(17, 0.62), (SL, 1.00)]:
         parts += _swept_arms((tx, 32), (1, 0), 12, 0.70, fill_uniform(b))
-    for tx, b in [(47, 0.62), (38, 1.00)]:
+    for tx, b in [(49, 0.62), (SR, 1.00)]:
         parts += _swept_arms((tx, 32), (-1, 0), 12, 0.70, fill_uniform(b))
     return render(parts)
 
@@ -509,9 +518,9 @@ def double_swept_pair():
 # --- 36: triple swept chevrons -------------------------------------------
 def triple_swept_pair():
     parts = []
-    for tx, b in [(10, 0.50), (18, 0.75), (26, 1.00)]:
+    for tx, b in [(10, 0.50), (17, 0.75), (SL, 1.00)]:
         parts += _swept_arms((tx, 32), (1, 0), 10, 0.72, fill_uniform(b))
-    for tx, b in [(54, 0.50), (46, 0.75), (38, 1.00)]:
+    for tx, b in [(54, 0.50), (47, 0.75), (SR, 1.00)]:
         parts += _swept_arms((tx, 32), (-1, 0), 10, 0.72, fill_uniform(b))
     return render(parts)
 
@@ -520,9 +529,9 @@ def triple_swept_pair():
 def hollow_triangle_stack_pair():
     line = 1.6
     tris = []
-    for tx, depth, hw in [(12, 7, 7), (21, 8, 8), (30, 9, 9)]:
+    for tx, depth, hw in [(12, 7, 7), (19, 8, 8), (CL, 9, 9)]:
         tris.append(((tx, 32), (1, 0), depth, hw))
-    for tx, depth, hw in [(52, 7, 7), (43, 8, 8), (34, 9, 9)]:
+    for tx, depth, hw in [(52, 7, 7), (45, 8, 8), (CR, 9, 9)]:
         tris.append(((tx, 32), (-1, 0), depth, hw))
 
     def sdf(p):
@@ -561,15 +570,15 @@ def _harpoon_parts(tip, direction, length, fill):
 
 def harpoon_pair():
     parts = []
-    parts += _harpoon_parts((30, 32), (1, 0), 20, fill_axial((30, 32), (1, 0), 20, 0.60, 1.00))
-    parts += _harpoon_parts((34, 32), (-1, 0), 20, fill_axial((34, 32), (-1, 0), 20, 0.60, 1.00))
+    parts += _harpoon_parts((CL, 32), (1, 0), 20, fill_axial((CL, 32), (1, 0), 20, 0.60, 1.00))
+    parts += _harpoon_parts((CR, 32), (-1, 0), 20, fill_axial((CR, 32), (-1, 0), 20, 0.60, 1.00))
     return render(parts)
 
 
 # --- 39: bold solid arrows ------------------------------------------------
 def bold_arrow_pair():
     parts = []
-    for tip, dir_ in [((30, 32), (1, 0)), ((34, 32), (-1, 0))]:
+    for tip, dir_ in [((CL, 32), (1, 0)), ((CR, 32), (-1, 0))]:
         dx, dy = dir_
         fill = fill_axial(tip, dir_, 22, near=0.55, far=1.00)
         parts.append((tri(tip, dir_, 12, 11), fill))
@@ -593,7 +602,7 @@ def barbed_head(tip, direction, depth, half_w, notch):
 
 def broadhead_pair():
     parts = []
-    for tip, dir_ in [((30, 32), (1, 0)), ((34, 32), (-1, 0))]:
+    for tip, dir_ in [((CL, 32), (1, 0)), ((CR, 32), (-1, 0))]:
         dx, dy = dir_
         fill = fill_axial(tip, dir_, 22, near=0.55, far=1.00)
         parts.append((barbed_head(tip, dir_, depth=14, half_w=12, notch=7), fill))
