@@ -26,6 +26,8 @@ texture at screen center for third-person / action-cam play.
 - Floating, draggable options window with a 6x5 visual icon grid.
   Doesn't sit on top of the reticle while you configure it.
 - Show-only-in-combat (off by default) and hide-on-vehicle toggles.
+- Saved profiles: store the current look under a name and load it any
+  time. Shared across all your characters.
 - Minimap button + addon compartment entry. Left-click opens options,
   right-click toggles combat-only.
 - `/cr help` for the full slash command list.

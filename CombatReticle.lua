@@ -103,6 +103,21 @@ ns.DEFAULTS = {
     -- Floating options window position; restored on each open. Defaults to
     -- top-left so the reticle (screen center) is never obscured.
     optionsWindow      = { point = "TOPLEFT", relPoint = "TOPLEFT", x = 100, y = -100 },
+    -- Saved profiles: account-wide, keyed by name. Each value is a snapshot
+    -- of the PROFILE_KEYS settings. activeProfile is the last one saved or
+    -- loaded (purely for display - settings always live at the top level).
+    profiles           = {},
+    activeProfile      = "",
+}
+
+-- The settings a profile snapshots. Deliberately excludes UI-chrome state
+-- (minimap, optionsWindow) and the profile bookkeeping itself - those are
+-- not part of "the look" you save and load. All values are scalars, so a
+-- shallow copy is a complete copy.
+ns.PROFILE_KEYS = {
+    "reticleId", "customIconPath", "size", "xOffset", "yOffset",
+    "alpha", "colorR", "colorG", "colorB",
+    "combatOnly", "hideOnVehicle", "hideWhileMounted",
 }
 
 -- Recursively fill any missing default keys without clobbering existing values.
@@ -325,6 +340,7 @@ local function GetPopupEditBox(self)
     end
     return nil
 end
+ns.API.GetPopupEditBox = GetPopupEditBox
 
 StaticPopupDialogs["COMBATRETICLE_CUSTOM_ICON"] = {
     text = "Built-in icon name (e.g. |cffffff00Ability_Mount_RidingHorse|r)\n|cffaaaaaaLeave blank and confirm to revert to preset.|r",
@@ -433,6 +449,9 @@ local function ResetAllSettings()
     -- create a fresh minimap = {...} would orphan LibDBIcon's reference
     -- and silently break minimap-position persistence until /reload.
     local mm = CombatReticleDB.minimap
+    -- Saved profiles are user data, not a "setting" - a defaults reset wipes
+    -- the active look but must not destroy the user's saved profiles.
+    local profs = CombatReticleDB.profiles
     wipe(CombatReticleDB)
     if mm then
         wipe(mm)
@@ -440,6 +459,8 @@ local function ResetAllSettings()
         mm.minimapPos = 220
         CombatReticleDB.minimap = mm
     end
+    if profs then CombatReticleDB.profiles = profs end
+    CombatReticleDB.activeProfile = ""
     MergeDefaults(CombatReticleDB, ns.DEFAULTS)
     Refresh()
     if ns.API.RefreshOptions then ns.API.RefreshOptions() end
@@ -455,6 +476,87 @@ StaticPopupDialogs["COMBATRETICLE_RESET_CONFIRM"] = {
 }
 
 ns.API.ShowResetConfirm = function() StaticPopup_Show("COMBATRETICLE_RESET_CONFIRM") end
+
+-- ---------------------------------------------------------------------------
+-- Profiles (account-wide named snapshots of PROFILE_KEYS). Manual save/load -
+-- nothing switches automatically. Shared by the options window and the
+-- `/cr profile` slash commands.
+-- ---------------------------------------------------------------------------
+local function EnsureProfiles()
+    CombatReticleDB.profiles = CombatReticleDB.profiles or {}
+    return CombatReticleDB.profiles
+end
+
+local function TrimName(name)
+    return (name or ""):gsub("^%s+", ""):gsub("%s+$", "")
+end
+ns.API.TrimProfileName = TrimName
+
+ns.API.GetProfileNames = function()
+    local out = {}
+    for k in pairs(EnsureProfiles()) do out[#out + 1] = k end
+    table.sort(out, function(a, b) return a:lower() < b:lower() end)
+    return out
+end
+
+ns.API.ProfileExists = function(name)
+    return EnsureProfiles()[TrimName(name)] ~= nil
+end
+
+ns.API.GetActiveProfile = function() return CombatReticleDB.activeProfile or "" end
+
+ns.API.SaveProfile = function(name)
+    name = TrimName(name)
+    if name == "" then ns.Print("profile name cannot be empty."); return false end
+    local snap = {}
+    for _, k in ipairs(ns.PROFILE_KEYS) do snap[k] = CombatReticleDB[k] end
+    EnsureProfiles()[name] = snap
+    CombatReticleDB.activeProfile = name
+    if ns.API.RefreshOptions then ns.API.RefreshOptions() end
+    ns.Print("saved profile '" .. name .. "'.")
+    return true
+end
+
+ns.API.LoadProfile = function(name)
+    name = TrimName(name)
+    local p = EnsureProfiles()[name]
+    if not p then ns.Print("no profile named '" .. name .. "'."); return false end
+    for _, k in ipairs(ns.PROFILE_KEYS) do
+        if p[k] ~= nil then CombatReticleDB[k] = p[k] end
+    end
+    -- customIconPath must stay a string for downstream code.
+    if CombatReticleDB.customIconPath == nil then CombatReticleDB.customIconPath = "" end
+    CombatReticleDB.activeProfile = name
+    Refresh()
+    if ns.API.RefreshOptions then ns.API.RefreshOptions() end
+    if ns.API.PreviewReticle then ns.API.PreviewReticle(4) end
+    ns.Print("loaded profile '" .. name .. "'.")
+    return true
+end
+
+ns.API.CopyProfile = function(from, to)
+    from, to = TrimName(from), TrimName(to)
+    local src = EnsureProfiles()[from]
+    if not src then ns.Print("no profile named '" .. from .. "'."); return false end
+    if to == "" then ns.Print("new profile name cannot be empty."); return false end
+    local copy = {}
+    for k, v in pairs(src) do copy[k] = v end
+    EnsureProfiles()[to] = copy
+    if ns.API.RefreshOptions then ns.API.RefreshOptions() end
+    ns.Print("copied profile '" .. from .. "' to '" .. to .. "'.")
+    return true
+end
+
+ns.API.DeleteProfile = function(name)
+    name = TrimName(name)
+    local profs = EnsureProfiles()
+    if not profs[name] then ns.Print("no profile named '" .. name .. "'."); return false end
+    profs[name] = nil
+    if CombatReticleDB.activeProfile == name then CombatReticleDB.activeProfile = "" end
+    if ns.API.RefreshOptions then ns.API.RefreshOptions() end
+    ns.Print("deleted profile '" .. name .. "'.")
+    return true
+end
 
 -- ---------------------------------------------------------------------------
 -- Convenience helpers used by slash commands and the minimap launcher
@@ -559,6 +661,8 @@ SlashCmdList.COMBATRETICLE = function(input)
         print("  |cffffff00/cr list|r           list all reticle presets")
         print("  |cffffff00/cr color|r          open color picker")
         print("  |cffffff00/cr color white|r    reset tint to white")
+        print("  |cffffff00/cr profile list|r   list saved profiles")
+        print("  |cffffff00/cr profile save|load|delete <name>|r  manage profiles")
         print("  |cffffff00/cr reset|r          restore defaults")
         return
     end
@@ -610,6 +714,44 @@ SlashCmdList.COMBATRETICLE = function(input)
 
     elseif cmd == "reset" then
         ns.API.ShowResetConfirm(); return
+
+    elseif cmd == "profile" or cmd == "profiles" then
+        local sub, arg = rest:match("^(%S*)%s*(.-)$")
+        sub = (sub or ""):lower()
+        if sub == "" or sub == "list" then
+            local names = ns.API.GetProfileNames()
+            if #names == 0 then
+                Msg("no saved profiles yet. Use /cr profile save <name>."); return
+            end
+            Msg("profiles:")
+            local active = ns.API.GetActiveProfile()
+            for _, n in ipairs(names) do
+                if n == active then
+                    print("  |cffffd200" .. n .. "|r (active)")
+                else
+                    print("  " .. n)
+                end
+            end
+        elseif sub == "save" then
+            if arg == "" then Msg("usage: /cr profile save <name>"); return end
+            local nm = ns.API.TrimProfileName(arg)
+            if ns.API.ProfileExists(nm) then
+                -- Confirm before clobbering an existing profile. The dialog is
+                -- registered by Options.lua, which has loaded by runtime.
+                StaticPopup_Show("COMBATRETICLE_OVERWRITE_PROFILE", nm, nil, nm)
+            else
+                ns.API.SaveProfile(nm)
+            end
+        elseif sub == "load" then
+            if arg == "" then Msg("usage: /cr profile load <name>"); return end
+            ns.API.LoadProfile(arg)
+        elseif sub == "delete" or sub == "del" or sub == "remove" then
+            if arg == "" then Msg("usage: /cr profile delete <name>"); return end
+            ns.API.DeleteProfile(arg)
+        else
+            Msg("usage: /cr profile [list | save <name> | load <name> | delete <name>]")
+        end
+        return
 
     else
         Msg("unknown command. Type /cr help.")

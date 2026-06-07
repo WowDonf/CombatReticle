@@ -491,6 +491,183 @@ AddCheckbox("Show minimap button",
     function(v) if ns.API.SetMinimapButtonShown then ns.API.SetMinimapButtonShown(v) end end)
 
 -- ===========================================================================
+-- Profiles section
+-- ===========================================================================
+AddHeader("Profiles")
+
+AddDescription("Save the current look (reticle, size, color, position and "
+    .. "behavior) as a named profile, then load it any time. Profiles are "
+    .. "shared across all your characters.")
+
+do
+    local selected = ""   -- the profile highlighted in the selector
+
+    local function Names() return (ns.API.GetProfileNames and ns.API.GetProfileNames()) or {} end
+    local function Exists(name)
+        for _, n in ipairs(Names()) do if n == name then return true end end
+        return false
+    end
+
+    -- "Profile:" label + a button that opens the selector menu.
+    local pLabel = content:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    pLabel:SetPoint("TOPLEFT", LEFT, y - 4)
+    pLabel:SetText("Profile:")
+
+    local selector = CreateFrame("Button", nil, content, "UIPanelButtonTemplate")
+    selector:SetSize(220, 24)
+    selector:SetPoint("LEFT", pLabel, "RIGHT", 8, -1)
+
+    local function UpdateSelectorText()
+        local names = Names()
+        if #names == 0 then
+            selected = ""
+            selector:SetText("(no profiles)")
+            selector:Disable()
+            return
+        end
+        selector:Enable()
+        if selected == "" or not Exists(selected) then
+            local active = ns.API.GetActiveProfile and ns.API.GetActiveProfile() or ""
+            selected = (active ~= "" and Exists(active)) and active or names[1]
+        end
+        selector:SetText(selected)
+    end
+
+    local function SetSelected(name)
+        name = ns.API.TrimProfileName and ns.API.TrimProfileName(name) or name
+        selected = name or ""
+        UpdateSelectorText()
+    end
+
+    selector:SetScript("OnClick", function(self)
+        local names = Names()
+        if #names == 0 then return end
+        if MenuUtil and MenuUtil.CreateContextMenu then
+            MenuUtil.CreateContextMenu(self, function(_, root)
+                root:CreateTitle("Choose a profile")
+                for _, n in ipairs(names) do
+                    -- CreateButton closes the menu on click (unlike a radio,
+                    -- which stays open); colour the current pick gold.
+                    local label = (n == selected) and ("|cffffd200" .. n .. "|r") or n
+                    root:CreateButton(label, function() SetSelected(n) end)
+                end
+            end)
+        else
+            -- Pre-MenuUtil client: click cycles to the next profile.
+            local idx = 1
+            for i, n in ipairs(names) do if n == selected then idx = i; break end end
+            SetSelected(names[(idx % #names) + 1])
+        end
+    end)
+    selector:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText("Saved profiles", 1, 1, 1)
+        GameTooltip:AddLine("Click to choose which profile the buttons below act on.",
+            0.8, 0.8, 0.8, true)
+        GameTooltip:Show()
+    end)
+    selector:SetScript("OnLeave", HideTooltip)
+
+    -- Keep the selector text in sync whenever the window refreshes.
+    widgets[#widgets + 1] = { Refresh = UpdateSelectorText }
+
+    y = y - 32
+
+    -- Save a name, but ask first if it would overwrite an existing profile.
+    local function DoSave(name)
+        name = (ns.API.TrimProfileName and ns.API.TrimProfileName(name)) or name
+        if name == "" then
+            ns.API.SaveProfile(name)   -- lets the core print the empty-name notice
+        elseif ns.API.ProfileExists(name) then
+            StaticPopup_Show("COMBATRETICLE_OVERWRITE_PROFILE", name, nil, name)
+        elseif ns.API.SaveProfile(name) then
+            SetSelected(name)
+        end
+    end
+
+    -- Name-entry / confirm popups. Defined here so they can see `selected`,
+    -- SetSelected, and DoSave. The core save/load/copy/delete logic lives in
+    -- CombatReticle.lua; these are just the prompts.
+    StaticPopupDialogs["COMBATRETICLE_SAVE_PROFILE"] = {
+        text = "Save the current settings as a profile.\nName:",
+        button1 = "Save", button2 = "Cancel",
+        hasEditBox = true, maxLetters = 32,
+        OnShow = function(self)
+            local eb = ns.API.GetPopupEditBox(self)
+            if eb then eb:SetText(selected ~= "" and selected or ""); eb:HighlightText(); eb:SetFocus() end
+        end,
+        OnAccept = function(self)
+            local eb = ns.API.GetPopupEditBox(self)
+            if eb then DoSave(eb:GetText()) end
+        end,
+        EditBoxOnEnterPressed = function(self)
+            DoSave(self:GetText())
+            local p = self:GetParent(); if p and p.Hide then p:Hide() end
+        end,
+        EditBoxOnEscapePressed = function(self)
+            local p = self:GetParent(); if p and p.Hide then p:Hide() end
+        end,
+        timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
+    }
+
+    StaticPopupDialogs["COMBATRETICLE_OVERWRITE_PROFILE"] = {
+        text = "A profile named '%s' already exists.\nOverwrite it?",
+        button1 = "Overwrite", button2 = "Cancel",
+        OnAccept = function(self)
+            if ns.API.SaveProfile(self.data) then SetSelected(self.data) end
+        end,
+        timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
+    }
+
+    StaticPopupDialogs["COMBATRETICLE_COPY_PROFILE"] = {
+        text = "Copy profile '%s' to a new name:",
+        button1 = "Copy", button2 = "Cancel",
+        hasEditBox = true, maxLetters = 32,
+        OnShow = function(self)
+            local eb = ns.API.GetPopupEditBox(self)
+            if eb then eb:SetText((self.data or "") .. " copy"); eb:HighlightText(); eb:SetFocus() end
+        end,
+        OnAccept = function(self)
+            local eb = ns.API.GetPopupEditBox(self)
+            if eb and ns.API.CopyProfile(self.data, eb:GetText()) then SetSelected(eb:GetText()) end
+        end,
+        EditBoxOnEnterPressed = function(self)
+            local p = self:GetParent()
+            local txt = self:GetText()
+            if ns.API.CopyProfile(p and p.data, txt) then SetSelected(txt) end
+            if p and p.Hide then p:Hide() end
+        end,
+        EditBoxOnEscapePressed = function(self)
+            local p = self:GetParent(); if p and p.Hide then p:Hide() end
+        end,
+        timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
+    }
+
+    StaticPopupDialogs["COMBATRETICLE_DELETE_PROFILE"] = {
+        text = "Delete profile '%s'?\n|cffaaaaaaThis cannot be undone.|r",
+        button1 = "Delete", button2 = "Cancel",
+        OnAccept = function(self)
+            if ns.API.DeleteProfile(self.data) then SetSelected("") end
+        end,
+        timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
+    }
+
+    -- Action row: Save as... / Load / Copy... / Delete
+    local saveBtn = AddButton("Save as...",
+        function() StaticPopup_Show("COMBATRETICLE_SAVE_PROFILE") end, 100,
+        "Snapshot the current settings under a name you type.")
+    local loadBtn = AddButtonAfter(saveBtn, "Load",
+        function() if selected ~= "" then ns.API.LoadProfile(selected) end end, 80,
+        "Apply the selected profile's settings.")
+    local copyBtn = AddButtonAfter(loadBtn, "Copy...",
+        function() if selected ~= "" then StaticPopup_Show("COMBATRETICLE_COPY_PROFILE", selected, nil, selected) end end, 90,
+        "Duplicate the selected profile under a new name.")
+    AddButtonAfter(copyBtn, "Delete",
+        function() if selected ~= "" then StaticPopup_Show("COMBATRETICLE_DELETE_PROFILE", selected, nil, selected) end end, 90,
+        "Delete the selected profile.")
+end
+
+-- ===========================================================================
 -- Tools section
 -- ===========================================================================
 AddHeader("Tools")

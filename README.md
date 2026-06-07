@@ -23,6 +23,8 @@ built-in WoW icon.
 - Sliders with stepper buttons for size (16-256 px), opacity, and X/Y
   offset. Click steppers to nudge, hold to repeat.
 - Show-only-in-combat (off by default) and hide-on-vehicle toggles.
+- Saved profiles: store the current look under a name and load it any
+  time. Profiles are shared across all your characters.
 - Minimap button + addon compartment entry. Left-click options,
   right-click combat-only toggle.
 - `/cr` slash commands.
@@ -37,20 +39,24 @@ Search "CombatReticle" on CurseForge or Wago, or copy the
 
 ## Slash commands
 
-| Command                  | Effect                                       |
-| ------------------------ | -------------------------------------------- |
-| `/cr`                    | open the options window                      |
-| `/cr reticle <1-40>`     | pick a preset by number                      |
-| `/cr icon <name>`        | use `Interface\Icons\<name>` as the reticle  |
-| `/cr icon clear`         | revert to the selected preset                |
-| `/cr size <n>`           | size in pixels (16-256)                      |
-| `/cr color`              | open the color picker                        |
-| `/cr color white`        | reset tint to white                          |
-| `/cr combat on` / `off`  | toggle combat-only                           |
-| `/cr minimap on` / `off` | show / hide the minimap button               |
-| `/cr list`               | list all 40 presets                          |
-| `/cr reset`              | reset to defaults (with confirmation)        |
-| `/cr help`               | list all commands                            |
+| Command                     | Effect                                      |
+| --------------------------- | ------------------------------------------- |
+| `/cr`                       | open the options window                     |
+| `/cr reticle <1-40>`        | pick a preset by number                     |
+| `/cr icon <name>`           | use `Interface\Icons\<name>` as the reticle |
+| `/cr icon clear`            | revert to the selected preset               |
+| `/cr size <n>`              | size in pixels (16-256)                     |
+| `/cr color`                 | open the color picker                       |
+| `/cr color white`           | reset tint to white                         |
+| `/cr combat on` / `off`     | toggle combat-only                          |
+| `/cr minimap on` / `off`    | show / hide the minimap button              |
+| `/cr list`                  | list all 40 presets                         |
+| `/cr profile list`          | list saved profiles                         |
+| `/cr profile save <name>`   | save current settings as a profile          |
+| `/cr profile load <name>`   | load a saved profile                        |
+| `/cr profile delete <name>` | delete a saved profile                      |
+| `/cr reset`                 | reset to defaults (with confirmation)       |
+| `/cr help`                  | list all commands                           |
 
 ## Compatibility
 

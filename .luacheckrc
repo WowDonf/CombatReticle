@@ -32,6 +32,7 @@ read_globals = {
     "Minimap",
     "Settings", "SettingsPanel", "HideUIPanel",
     "GameTooltip",
+    "MenuUtil",               -- modern dropdown / context-menu builder
     "ColorPickerFrame",
     "StaticPopup_Show",
     "UISpecialFrames",
