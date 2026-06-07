@@ -5,17 +5,18 @@ Center-screen reticle for WoW Midnight (patch 12.x).
 ## What it does
 
 Draws one customizable texture at the center of your screen as an aim
-point for third-person / action-cam play. 30 bundled designs, or use any
+point for third-person / action-cam play. 40 bundled designs, or use any
 built-in WoW icon.
 
 ## Features
 
-- 30 bundled reticle textures: 10 standard shapes (crosshair, brackets,
+- 40 bundled reticle textures: 10 standard shapes (crosshair, brackets,
   target rings, diamond, hexagon, star, triangle, X, double / quad
   arrows), 10 inward-pointing and minimal designs (chevrons, gap
   crosshair, side arrows, small square, filled dot, ring + dot, corner
-  arrows), and a modern chevron set (singles, triples, converging
-  pairs) with a skull and shamrock icon.
+  arrows), a modern chevron set (singles, triples, converging pairs)
+  with a skull and shamrock icon, and 10 fancy horizontal arrow pairs
+  (feathered, swept, triangle-stack, hollow, harpoon, bold, broadhead).
 - Use any `Interface\Icons` texture as the reticle instead.
 - Blizzard color picker (wheel, RGB, hex, opacity). Cancel restores the
   previous color.
@@ -39,7 +40,7 @@ Search "CombatReticle" on CurseForge or Wago, or copy the
 | Command                  | Effect                                       |
 | ------------------------ | -------------------------------------------- |
 | `/cr`                    | open the options window                      |
-| `/cr reticle <1-30>`     | pick a preset by number                      |
+| `/cr reticle <1-40>`     | pick a preset by number                      |
 | `/cr icon <name>`        | use `Interface\Icons\<name>` as the reticle  |
 | `/cr icon clear`         | revert to the selected preset                |
 | `/cr size <n>`           | size in pixels (16-256)                      |
@@ -47,7 +48,7 @@ Search "CombatReticle" on CurseForge or Wago, or copy the
 | `/cr color white`        | reset tint to white                          |
 | `/cr combat on` / `off`  | toggle combat-only                           |
 | `/cr minimap on` / `off` | show / hide the minimap button               |
-| `/cr list`               | list all 30 presets                          |
+| `/cr list`               | list all 40 presets                          |
 | `/cr reset`              | reset to defaults (with confirmation)        |
 | `/cr help`               | list all commands                            |
 

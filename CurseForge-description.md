@@ -2,7 +2,7 @@
 CurseForge / Wago "Summary" field (paste into the short summary box on
 the project's settings page, not into the description body):
 
-Center-screen reticle for WoW Midnight. 30 textures or any WoW icon, color tinting, size and position controls.
+Center-screen reticle for WoW Midnight. 40 textures or any WoW icon, color tinting, size and position controls.
 -->
 
 # CombatReticle
@@ -12,12 +12,13 @@ texture at screen center for third-person / action-cam play.
 
 ## Features
 
-- 30 bundled reticle textures: 10 standard shapes (crosshair, brackets,
+- 40 bundled reticle textures: 10 standard shapes (crosshair, brackets,
   target rings, diamond, hexagon, star, triangle, X, double / quad
   arrows), 10 inward-pointing and minimal designs (chevrons, gap
   crosshair, side arrows, small square, filled dot, ring + dot, corner
-  arrows), and a modern chevron set (singles, triples, converging
-  pairs) with a skull and shamrock icon.
+  arrows), a modern chevron set (singles, triples, converging pairs)
+  with a skull and shamrock icon, and 10 fancy horizontal arrow pairs
+  (feathered, swept, triangle-stack, hollow, harpoon, bold, broadhead).
 - Use any `Interface\Icons` texture as the reticle instead (e.g.
   `Ability_Mount_RidingHorse`).
 - Blizzard color picker for tinting (wheel, RGB, hex, opacity).

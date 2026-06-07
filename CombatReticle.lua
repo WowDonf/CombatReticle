@@ -15,8 +15,8 @@ local addonName, ns = ...
 ns.API = ns.API or {}
 
 -- ---------------------------------------------------------------------------
--- Reticle library (20 presets). New entries auto-appear in the options
--- dropdown - just add to the list.
+-- Reticle library (40 presets). New entries auto-appear in the options
+-- grid - just add to the list.
 -- ---------------------------------------------------------------------------
 ns.RETICLES = {
     -- Standard size designs (1-10)
@@ -55,6 +55,20 @@ ns.RETICLES = {
     { id = 28, name = "Converging Triple Chevrons",  texture = "Interface\\AddOns\\CombatReticle\\Textures\\reticle_28_converging_triple.tga" },
     { id = 29, name = "Sharp Down Chevron",          texture = "Interface\\AddOns\\CombatReticle\\Textures\\reticle_29_sharp_down_chevron.tga" },
     { id = 30, name = "Sharp Up Chevron",            texture = "Interface\\AddOns\\CombatReticle\\Textures\\reticle_30_sharp_up_chevron.tga" },
+    -- Fancy horizontal markers (31-34). Ornate left+right arrow pairs
+    -- pointing inward at the player; greyscale so the color picker tints
+    -- them cleanly.
+    { id = 31, name = "Feathered Arrows",            texture = "Interface\\AddOns\\CombatReticle\\Textures\\reticle_31_feathered_arrows.tga" },
+    { id = 32, name = "Swept Chevrons",              texture = "Interface\\AddOns\\CombatReticle\\Textures\\reticle_32_swept_chevrons.tga" },
+    { id = 33, name = "Triangle Stack",              texture = "Interface\\AddOns\\CombatReticle\\Textures\\reticle_33_triangle_stack.tga" },
+    { id = 34, name = "Hollow Arrows",               texture = "Interface\\AddOns\\CombatReticle\\Textures\\reticle_34_hollow_arrows.tga" },
+    -- More fancy horizontal markers (35-40), same inward-pair styling.
+    { id = 35, name = "Double Swept Chevrons",       texture = "Interface\\AddOns\\CombatReticle\\Textures\\reticle_35_double_swept.tga" },
+    { id = 36, name = "Triple Swept Chevrons",       texture = "Interface\\AddOns\\CombatReticle\\Textures\\reticle_36_triple_swept.tga" },
+    { id = 37, name = "Hollow Triangle Stack",       texture = "Interface\\AddOns\\CombatReticle\\Textures\\reticle_37_hollow_triangle_stack.tga" },
+    { id = 38, name = "Harpoon Arrows",              texture = "Interface\\AddOns\\CombatReticle\\Textures\\reticle_38_harpoon_arrows.tga" },
+    { id = 39, name = "Bold Arrows",                 texture = "Interface\\AddOns\\CombatReticle\\Textures\\reticle_39_bold_arrows.tga" },
+    { id = 40, name = "Broadhead Arrows",            texture = "Interface\\AddOns\\CombatReticle\\Textures\\reticle_40_broadhead_arrows.tga" },
 }
 
 local function GetReticleById(id)

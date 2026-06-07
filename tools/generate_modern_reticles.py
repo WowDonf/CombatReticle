@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-# Generates the 64x64 RGBA TGA textures for reticle slots 21-30: a
-# modern chevron set (singles, triples, converging pairs) plus a skull
-# and shamrock icon. Sharp polygonal silhouettes with subtle axial
+# Generates the 64x64 RGBA TGA textures for reticle slots 21-40: a
+# modern chevron set (singles, triples, converging pairs), a skull and
+# shamrock icon, and two sets of fancy horizontal markers (feathered,
+# swept, triangle-stack, hollow, harpoon, bold and broadhead arrows).
+# Sharp polygonal silhouettes with subtle axial
 # brightness gradients where useful, and no hard black outline so the
 # in-game color picker tints them cleanly. Pure stdlib (no Pillow).
 #
@@ -346,6 +348,263 @@ def sharp_up_chevron():
 
 
 # ===========================================================================
+# Fancy horizontal markers (slots 31-34). Each is a left+right pair of
+# ornate arrows pointing inward at the player. Built from the same
+# greyscale polygon/SDF primitives so the color picker tints them cleanly.
+# ===========================================================================
+def _norm(vx, vy):
+    m = math.hypot(vx, vy) or 1.0
+    return (vx / m, vy / m)
+
+
+def rect(center, direction, half_len, half_w):
+    """Oriented rectangle as a 4-vert polygon: `direction` is the long axis."""
+    cx, cy = center
+    dx, dy = direction
+    sx, sy = dy, -dx
+    return [
+        (cx - dx * half_len - sx * half_w, cy - dy * half_len - sy * half_w),
+        (cx + dx * half_len - sx * half_w, cy + dy * half_len - sy * half_w),
+        (cx + dx * half_len + sx * half_w, cy + dy * half_len + sy * half_w),
+        (cx - dx * half_len + sx * half_w, cy - dy * half_len + sy * half_w),
+    ]
+
+
+def taper_arm(tip, arm_dir, length, w_near, w_far):
+    """Trapezoid that is wide at `tip` and tapers to a point going outward -
+    used for sleek swept wingtips."""
+    dx, dy = arm_dir
+    sx, sy = dy, -dx
+    far = (tip[0] + dx * length, tip[1] + dy * length)
+    return [
+        (tip[0] - sx * w_near, tip[1] - sy * w_near),
+        (far[0] - sx * w_far,  far[1] - sy * w_far),
+        (far[0] + sx * w_far,  far[1] + sy * w_far),
+        (tip[0] + sx * w_near, tip[1] + sy * w_near),
+    ]
+
+
+def tri(tip, direction, depth, half_w):
+    """Solid triangular arrowhead: tip forward, flat base `depth` behind."""
+    dx, dy = direction
+    sx, sy = dy, -dx
+    base = (tip[0] - dx * depth, tip[1] - dy * depth)
+    return [tip,
+            (base[0] - sx * half_w, base[1] - sy * half_w),
+            (base[0] + sx * half_w, base[1] + sy * half_w)]
+
+
+# --- 31: feathered (fletched) arrows -------------------------------------
+def _feathered_arrow_parts(tip, direction, length, fill):
+    dx, dy = direction
+    sx, sy = dy, -dx
+    parts = []
+    head_depth = 11
+    # Barbed arrowhead (chevron with a notched back).
+    parts.append((chevron(tip, direction, half_width=8, depth=head_depth, thickness=4), fill))
+    # Shaft from just behind the head back to the tail.
+    tail = (tip[0] - dx * length, tip[1] - dy * length)
+    shaft_start = (tip[0] - dx * (head_depth - 2), tip[1] - dy * (head_depth - 2))
+    shaft_center = ((shaft_start[0] + tail[0]) / 2, (shaft_start[1] + tail[1]) / 2)
+    shaft_halflen = (length - (head_depth - 2)) / 2
+    parts.append((rect(shaft_center, direction, shaft_halflen, 1.8), fill))
+    # Three fletching barbs swept back-and-out on each side of the tail.
+    top = _norm(-dx + sx * 0.9, -dy + sy * 0.9)
+    bot = _norm(-dx - sx * 0.9, -dy - sy * 0.9)
+    for i in range(3):
+        base = (tail[0] + dx * (i * 3.2), tail[1] + dy * (i * 3.2))
+        for bd in (top, bot):
+            bc = (base[0] + bd[0] * 3.5, base[1] + bd[1] * 3.5)
+            parts.append((rect(bc, bd, 4.0, 1.1), fill))
+    return parts
+
+
+def feathered_pair():
+    parts = []
+    parts += _feathered_arrow_parts((28, 32), (1, 0), 21,
+                                    fill_axial((28, 32), (1, 0), 21, near=0.60, far=1.00))
+    parts += _feathered_arrow_parts((36, 32), (-1, 0), 21,
+                                    fill_axial((36, 32), (-1, 0), 21, near=0.60, far=1.00))
+    return render(parts)
+
+
+# --- 32: swept "pinched" chevrons ----------------------------------------
+def _swept_arms(tip, direction, length, sweep, fill):
+    dx, dy = direction
+    sx, sy = dy, -dx
+    top = _norm(-dx + sx * sweep, -dy + sy * sweep)
+    bot = _norm(-dx - sx * sweep, -dy - sy * sweep)
+    return [(taper_arm(tip, top, length, w_near=3.0, w_far=0.7), fill),
+            (taper_arm(tip, bot, length, w_near=3.0, w_far=0.7), fill)]
+
+
+def swept_pair():
+    # Tips sit ~12px apart with the arms swept outward, so the two sides
+    # read as a clean ">  <" pair rather than crossing into an X.
+    parts = []
+    parts += _swept_arms((26, 32), (1, 0), 15, 0.70,
+                         fill_axial((26, 32), (1, 0), 13, near=0.60, far=1.00))
+    parts += _swept_arms((38, 32), (-1, 0), 15, 0.70,
+                         fill_axial((38, 32), (-1, 0), 13, near=0.60, far=1.00))
+    return render(parts)
+
+
+# --- 33: layered triangle stack ------------------------------------------
+def triangle_stack_pair():
+    parts = []
+    # (tip_x, depth, half_w, brightness) - leading (toward center) brightest.
+    right = [(12, 7, 7, 0.55), (21, 8, 8, 0.78), (31, 9, 9, 1.00)]
+    left  = [(52, 7, 7, 0.55), (43, 8, 8, 0.78), (33, 9, 9, 1.00)]
+    for tx, depth, hw, b in right:
+        parts.append((tri((tx, 32), (1, 0), depth, hw), fill_uniform(b)))
+    for tx, depth, hw, b in left:
+        parts.append((tri((tx, 32), (-1, 0), depth, hw), fill_uniform(b)))
+    return render(parts)
+
+
+# --- 34: hollow double-line arrows ---------------------------------------
+def _tri_sdf(p, tip, direction, depth, half_w):
+    dx, dy = direction
+    sx, sy = dy, -dx
+    base = (tip[0] - dx * depth, tip[1] - dy * depth)
+    return sdf_polygon(p, [tip,
+                           (base[0] - sx * half_w, base[1] - sy * half_w),
+                           (base[0] + sx * half_w, base[1] + sy * half_w)])
+
+
+def hollow_pair():
+    line = 1.7  # wall thickness
+    arrows = [
+        ((20, 32), (1, 0), 11, 11),
+        ((30, 32), (1, 0), 11, 11),
+        ((44, 32), (-1, 0), 11, 11),
+        ((34, 32), (-1, 0), 11, 11),
+    ]
+
+    def sdf(p):
+        d = float("inf")
+        for tip, dir_, depth, hw in arrows:
+            outer = _tri_sdf(p, tip, dir_, depth, hw)
+            back = line * 2.2
+            inner_tip = (tip[0] - dir_[0] * back, tip[1] - dir_[1] * back)
+            inner = _tri_sdf(p, inner_tip, dir_, depth - back, hw - line * 2.0)
+            shell = max(outer, -inner)
+            if shell < d:
+                d = shell
+        return d
+    return render_sdf(sdf)
+
+
+# --- 35: double swept chevrons -------------------------------------------
+def double_swept_pair():
+    # Leading tips kept ~12px apart so the inner pair stays a ">  <", not an X.
+    parts = []
+    for tx, b in [(17, 0.62), (26, 1.00)]:
+        parts += _swept_arms((tx, 32), (1, 0), 12, 0.70, fill_uniform(b))
+    for tx, b in [(47, 0.62), (38, 1.00)]:
+        parts += _swept_arms((tx, 32), (-1, 0), 12, 0.70, fill_uniform(b))
+    return render(parts)
+
+
+# --- 36: triple swept chevrons -------------------------------------------
+def triple_swept_pair():
+    parts = []
+    for tx, b in [(10, 0.50), (18, 0.75), (26, 1.00)]:
+        parts += _swept_arms((tx, 32), (1, 0), 10, 0.72, fill_uniform(b))
+    for tx, b in [(54, 0.50), (46, 0.75), (38, 1.00)]:
+        parts += _swept_arms((tx, 32), (-1, 0), 10, 0.72, fill_uniform(b))
+    return render(parts)
+
+
+# --- 37: hollow triangle stack -------------------------------------------
+def hollow_triangle_stack_pair():
+    line = 1.6
+    tris = []
+    for tx, depth, hw in [(12, 7, 7), (21, 8, 8), (30, 9, 9)]:
+        tris.append(((tx, 32), (1, 0), depth, hw))
+    for tx, depth, hw in [(52, 7, 7), (43, 8, 8), (34, 9, 9)]:
+        tris.append(((tx, 32), (-1, 0), depth, hw))
+
+    def sdf(p):
+        d = float("inf")
+        for tip, dir_, depth, hw in tris:
+            outer = _tri_sdf(p, tip, dir_, depth, hw)
+            back = line * 2.0
+            inner_tip = (tip[0] - dir_[0] * back, tip[1] - dir_[1] * back)
+            inner = _tri_sdf(p, inner_tip, dir_, depth - back, hw - line * 1.8)
+            shell = max(outer, -inner)
+            if shell < d:
+                d = shell
+        return d
+    return render_sdf(sdf)
+
+
+# --- 38: harpoon arrows ---------------------------------------------------
+def _harpoon_parts(tip, direction, length, fill):
+    dx, dy = direction
+    sx, sy = dy, -dx
+    parts = []
+    head_depth, head_hw = 9, 5
+    parts.append((tri(tip, direction, head_depth, head_hw), fill))
+    base = (tip[0] - dx * head_depth, tip[1] - dy * head_depth)
+    # Backward-hooking flukes from the head's base corners.
+    for side in (1, -1):
+        corner = (base[0] + sx * side * head_hw, base[1] + sy * side * head_hw)
+        bdir = _norm(-dx + sx * side * 1.1, -dy + sy * side * 1.1)
+        parts.append((taper_arm(corner, bdir, 7, w_near=2.2, w_far=0.6), fill))
+    # Shaft from head base back to the tail.
+    tail = (tip[0] - dx * length, tip[1] - dy * length)
+    sc = ((base[0] + tail[0]) / 2, (base[1] + tail[1]) / 2)
+    parts.append((rect(sc, direction, (length - head_depth) / 2, 1.6), fill))
+    return parts
+
+
+def harpoon_pair():
+    parts = []
+    parts += _harpoon_parts((30, 32), (1, 0), 20, fill_axial((30, 32), (1, 0), 20, 0.60, 1.00))
+    parts += _harpoon_parts((34, 32), (-1, 0), 20, fill_axial((34, 32), (-1, 0), 20, 0.60, 1.00))
+    return render(parts)
+
+
+# --- 39: bold solid arrows ------------------------------------------------
+def bold_arrow_pair():
+    parts = []
+    for tip, dir_ in [((30, 32), (1, 0)), ((34, 32), (-1, 0))]:
+        dx, dy = dir_
+        fill = fill_axial(tip, dir_, 22, near=0.55, far=1.00)
+        parts.append((tri(tip, dir_, 12, 11), fill))
+        base = (tip[0] - dx * 12, tip[1] - dy * 12)
+        tail = (tip[0] - dx * 22, tip[1] - dy * 22)
+        sc = ((base[0] + tail[0]) / 2, (base[1] + tail[1]) / 2)
+        parts.append((rect(sc, dir_, 5, 4.5), fill))
+    return render(parts)
+
+
+# --- 40: broadhead (barbed) arrows ---------------------------------------
+def barbed_head(tip, direction, depth, half_w, notch):
+    """Concave-backed arrowhead: two backward barbs with a notch between."""
+    dx, dy = direction
+    sx, sy = dy, -dx
+    wing_t = (tip[0] - dx * depth - sx * half_w, tip[1] - dy * depth - sy * half_w)
+    wing_b = (tip[0] - dx * depth + sx * half_w, tip[1] - dy * depth + sy * half_w)
+    notch_pt = (tip[0] - dx * (depth - notch), tip[1] - dy * (depth - notch))
+    return [tip, wing_t, notch_pt, wing_b]
+
+
+def broadhead_pair():
+    parts = []
+    for tip, dir_ in [((30, 32), (1, 0)), ((34, 32), (-1, 0))]:
+        dx, dy = dir_
+        fill = fill_axial(tip, dir_, 22, near=0.55, far=1.00)
+        parts.append((barbed_head(tip, dir_, depth=14, half_w=12, notch=7), fill))
+        base = (tip[0] - dx * 14, tip[1] - dy * 14)
+        tail = (tip[0] - dx * 23, tip[1] - dy * 23)
+        sc = ((base[0] + tail[0]) / 2, (base[1] + tail[1]) / 2)
+        parts.append((rect(sc, dir_, 4.5, 2.2), fill))
+    return render(parts)
+
+
+# ===========================================================================
 # Driver. Filenames describe the actual visual; the Lua side references
 # the same paths.
 # ===========================================================================
@@ -360,6 +619,16 @@ DESIGNS = [
     ("reticle_28_converging_triple.tga",    horizontal_converging_triple),
     ("reticle_29_sharp_down_chevron.tga",   sharp_down_chevron),
     ("reticle_30_sharp_up_chevron.tga",     sharp_up_chevron),
+    ("reticle_31_feathered_arrows.tga",     feathered_pair),
+    ("reticle_32_swept_chevrons.tga",       swept_pair),
+    ("reticle_33_triangle_stack.tga",       triangle_stack_pair),
+    ("reticle_34_hollow_arrows.tga",        hollow_pair),
+    ("reticle_35_double_swept.tga",         double_swept_pair),
+    ("reticle_36_triple_swept.tga",         triple_swept_pair),
+    ("reticle_37_hollow_triangle_stack.tga", hollow_triangle_stack_pair),
+    ("reticle_38_harpoon_arrows.tga",       harpoon_pair),
+    ("reticle_39_bold_arrows.tga",          bold_arrow_pair),
+    ("reticle_40_broadhead_arrows.tga",     broadhead_pair),
 ]
 
 
