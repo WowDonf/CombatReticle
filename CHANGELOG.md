@@ -1,5 +1,39 @@
 # CombatReticle changelog
 
+## 1.3.0
+
+### Saved profiles
+
+- Save the current look - reticle, custom icon, size, color, position,
+  and the combat / vehicle / mounted toggles - as a named profile and
+  load it any time. Profiles are account-wide, shared across all of your
+  characters.
+- New Profiles section in the options window: a dropdown selector plus
+  Save / Load / Copy / Delete buttons. Saving over an existing name
+  asks for confirmation first.
+- Slash commands: `/cr profile list`, `/cr profile save <name>`,
+  `/cr profile load <name>`, `/cr profile delete <name>`.
+- A "Reset to defaults" now keeps your saved profiles intact.
+
+### New textures
+
+- 10 fancy horizontal arrow pairs (slots 31-40): Feathered Arrows, Swept
+  Chevrons, Triangle Stack, Hollow Arrows, Double Swept Chevrons, Triple
+  Swept Chevrons, Hollow Triangle Stack, Harpoon Arrows, Bold Arrows,
+  Broadhead Arrows. Inward-pointing left/right pairs, spaced to match
+  the Double Side Arrows preset.
+
+### Fixes
+
+- "Show only in combat" (and the hide-on-vehicle / hide-while-mounted
+  rules) now hide the reticle the instant the options window closes,
+  instead of lingering for a few seconds while the closing preview
+  faded out.
+
+### Compatibility
+
+- Marked compatible with patches 12.0.5 and 12.0.7.
+
 ## 1.2.0
 
 ### Hide-while-mounted
