@@ -2,10 +2,13 @@
 # Reference: https://github.com/BigWigsMods/packager/wiki
 #
 # At build time, every external below is fetched fresh from its upstream
-# source and overwrites the committed copy in Libs/. This means:
-#   * Local clones still work for development (Libs/ is committed).
+# source into Libs/. Libs/ is NOT committed (it's gitignored); the build
+# is the only place the libraries are assembled. This means:
 #   * Released zips always contain the latest published library versions.
-#   * You never need to manually update Libs/.
+#   * The repo stays free of vendored third-party code.
+#   * You never manually update Libs/. For in-game testing from a local
+#     checkout, keep your own copy of Libs/ on disk (gitignored) or run
+#     the packager once to populate it.
 
 package-as: CombatReticle
 

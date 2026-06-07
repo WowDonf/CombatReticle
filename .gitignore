@@ -4,6 +4,12 @@
 release/
 *.zip
 
+# Embedded libraries - not committed. The BigWigs packager fetches these
+# fresh from upstream at build time (see externals in .pkgmeta), so the
+# released zip always has them. A local checkout keeps its own copy on
+# disk for in-game testing; it just isn't tracked.
+Libs/
+
 # Python tooling (asset/build scripts under tools/)
 __pycache__/
 *.pyc
