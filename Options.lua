@@ -711,22 +711,27 @@ end
 
 local function ToggleOptionsWindow()
     if optionsFrame:IsShown() then
+        -- Hide() fires the OnHide hook below, which applies the real
+        -- visibility rules immediately - no preview pulse here, or
+        -- combat-only would keep the reticle up for several seconds.
         optionsFrame:Hide()
-        if ns.API.PreviewReticle then ns.API.PreviewReticle(4) end
     else
         ShowOptionsWindow()
     end
 end
 
 -- While the window is up, reticle is force-shown regardless of combat-only
--- so the user can actually see what they're configuring. The preview pulse
--- on close gives a final pulse before normal rules resume.
+-- so the user can actually see what they're configuring. On close the real
+-- visibility rules are applied immediately (see the OnHide handler).
 optionsFrame:HookScript("OnShow", function()
     if ns.API.SetOptionsOpen then ns.API.SetOptionsOpen(true) end
 end)
 optionsFrame:HookScript("OnHide", function()
     if ns.API.SetOptionsOpen then ns.API.SetOptionsOpen(false) end
-    if ns.API.PreviewReticle then ns.API.PreviewReticle(4) end
+    -- Apply the real rules at once (and drop any preview left over from the
+    -- last setting change) so combat-only / vehicle / mount hiding is
+    -- instant on close rather than delayed by a lingering preview window.
+    if ns.API.EndPreview then ns.API.EndPreview() end
 end)
 
 -- Called by CombatReticle.lua after reset / slash command / minimap toggle.

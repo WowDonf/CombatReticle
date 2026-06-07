@@ -209,6 +209,15 @@ local function PreviewReticle(duration)
 end
 ns.API.PreviewReticle = PreviewReticle
 
+-- Cancel any in-flight preview window and apply the real visibility rules
+-- right now. Used when the options window closes so combat-only / vehicle /
+-- mount rules take effect immediately, instead of the reticle lingering for
+-- the remainder of the last preview pulse.
+ns.API.EndPreview = function()
+    previewUntil = 0
+    if ns.API.Refresh then ns.API.Refresh() end
+end
+
 -- Options window open/closed state, set by Options.lua. While the options
 -- window is up, combat-only and vehicle rules are bypassed so the user can
 -- actually see what they're configuring.
