@@ -496,11 +496,14 @@ AddCheckbox("Show minimap button",
 AddHeader("Profiles")
 
 AddDescription("Save the current look (reticle, size, color, position and "
-    .. "behavior) as a named profile, then load it any time. Profiles are "
-    .. "shared across all your characters.")
+    .. "behavior) as a named profile. Choosing a profile from the list loads "
+    .. "it right away. Profiles are shared across all your characters.")
 
 do
-    local selected = ""   -- the profile highlighted in the selector
+    -- The dropdown IS the live profile: choosing one loads it immediately, and
+    -- `selected` always mirrors the active (loaded) profile. The action buttons
+    -- operate on that profile.
+    local selected = ""
 
     local function Names() return (ns.API.GetProfileNames and ns.API.GetProfileNames()) or {} end
     local function Exists(name)
@@ -517,6 +520,8 @@ do
     selector:SetSize(220, 24)
     selector:SetPoint("LEFT", pLabel, "RIGHT", 8, -1)
 
+    -- Text always reflects the active (loaded) profile, so the dropdown never
+    -- shows a name that isn't actually applied.
     local function UpdateSelectorText()
         local names = Names()
         if #names == 0 then
@@ -526,16 +531,22 @@ do
             return
         end
         selector:Enable()
-        if selected == "" or not Exists(selected) then
-            local active = ns.API.GetActiveProfile and ns.API.GetActiveProfile() or ""
-            selected = (active ~= "" and Exists(active)) and active or names[1]
+        local active = ns.API.GetActiveProfile and ns.API.GetActiveProfile() or ""
+        if active ~= "" and Exists(active) then
+            selected = active
+            selector:SetText(active)
+        else
+            selected = ""
+            selector:SetText("(select a profile)")
         end
-        selector:SetText(selected)
     end
 
-    local function SetSelected(name)
+    -- Load a profile and let its settings take effect at once. LoadProfile sets
+    -- it active and calls RefreshOptions, which re-syncs this selector.
+    local function LoadNow(name)
         name = ns.API.TrimProfileName and ns.API.TrimProfileName(name) or name
-        selected = name or ""
+        if name == "" or not ns.API.LoadProfile then return end
+        ns.API.LoadProfile(name)
         UpdateSelectorText()
     end
 
@@ -544,25 +555,25 @@ do
         if #names == 0 then return end
         if MenuUtil and MenuUtil.CreateContextMenu then
             MenuUtil.CreateContextMenu(self, function(_, root)
-                root:CreateTitle("Choose a profile")
+                root:CreateTitle("Load a profile")
                 for _, n in ipairs(names) do
-                    -- CreateButton closes the menu on click (unlike a radio,
-                    -- which stays open); colour the current pick gold.
+                    -- CreateButton closes the menu on click; colour the loaded
+                    -- profile gold.
                     local label = (n == selected) and ("|cffffd200" .. n .. "|r") or n
-                    root:CreateButton(label, function() SetSelected(n) end)
+                    root:CreateButton(label, function() LoadNow(n) end)
                 end
             end)
         else
-            -- Pre-MenuUtil client: click cycles to the next profile.
+            -- Pre-MenuUtil client: click loads the next profile in the list.
             local idx = 1
             for i, n in ipairs(names) do if n == selected then idx = i; break end end
-            SetSelected(names[(idx % #names) + 1])
+            LoadNow(names[(idx % #names) + 1])
         end
     end)
     selector:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:SetText("Saved profiles", 1, 1, 1)
-        GameTooltip:AddLine("Click to choose which profile the buttons below act on.",
+        GameTooltip:AddLine("Click a profile to load it immediately.",
             0.8, 0.8, 0.8, true)
         GameTooltip:Show()
     end)
@@ -573,7 +584,8 @@ do
 
     y = y - 32
 
-    -- Save a name, but ask first if it would overwrite an existing profile.
+    -- Save the current settings under a brand-new name, asking first if the
+    -- typed name would overwrite an existing profile.
     local function DoSave(name)
         name = (ns.API.TrimProfileName and ns.API.TrimProfileName(name)) or name
         if name == "" then
@@ -581,20 +593,20 @@ do
         elseif ns.API.ProfileExists(name) then
             StaticPopup_Show("COMBATRETICLE_OVERWRITE_PROFILE", name, nil, name)
         elseif ns.API.SaveProfile(name) then
-            SetSelected(name)
+            UpdateSelectorText()
         end
     end
 
     -- Name-entry / confirm popups. Defined here so they can see `selected`,
-    -- SetSelected, and DoSave. The core save/load/copy/delete logic lives in
-    -- CombatReticle.lua; these are just the prompts.
+    -- UpdateSelectorText, and DoSave. The core save/load/copy/delete logic
+    -- lives in CombatReticle.lua; these are just the prompts.
     StaticPopupDialogs["COMBATRETICLE_SAVE_PROFILE"] = {
-        text = "Save the current settings as a profile.\nName:",
+        text = "Save the current settings as a new profile.\nName:",
         button1 = "Save", button2 = "Cancel",
         hasEditBox = true, maxLetters = 32,
         OnShow = function(self)
             local eb = ns.API.GetPopupEditBox(self)
-            if eb then eb:SetText(selected ~= "" and selected or ""); eb:HighlightText(); eb:SetFocus() end
+            if eb then eb:SetText(""); eb:SetFocus() end
         end,
         OnAccept = function(self)
             local eb = ns.API.GetPopupEditBox(self)
@@ -614,7 +626,7 @@ do
         text = "A profile named '%s' already exists.\nOverwrite it?",
         button1 = "Overwrite", button2 = "Cancel",
         OnAccept = function(self)
-            if ns.API.SaveProfile(self.data) then SetSelected(self.data) end
+            if ns.API.SaveProfile(self.data) then UpdateSelectorText() end
         end,
         timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
     }
@@ -629,12 +641,12 @@ do
         end,
         OnAccept = function(self)
             local eb = ns.API.GetPopupEditBox(self)
-            if eb and ns.API.CopyProfile(self.data, eb:GetText()) then SetSelected(eb:GetText()) end
+            if eb and ns.API.CopyProfile(self.data, eb:GetText()) then UpdateSelectorText() end
         end,
         EditBoxOnEnterPressed = function(self)
             local p = self:GetParent()
             local txt = self:GetText()
-            if ns.API.CopyProfile(p and p.data, txt) then SetSelected(txt) end
+            if ns.API.CopyProfile(p and p.data, txt) then UpdateSelectorText() end
             if p and p.Hide then p:Hide() end
         end,
         EditBoxOnEscapePressed = function(self)
@@ -647,24 +659,24 @@ do
         text = "Delete profile '%s'?\n|cffaaaaaaThis cannot be undone.|r",
         button1 = "Delete", button2 = "Cancel",
         OnAccept = function(self)
-            if ns.API.DeleteProfile(self.data) then SetSelected("") end
+            if ns.API.DeleteProfile(self.data) then UpdateSelectorText() end
         end,
         timeout = 0, whileDead = true, hideOnEscape = true, preferredIndex = 3,
     }
 
-    -- Action row: Save as... / Load / Copy... / Delete
-    local saveBtn = AddButton("Save as...",
-        function() StaticPopup_Show("COMBATRETICLE_SAVE_PROFILE") end, 100,
-        "Snapshot the current settings under a name you type.")
-    local loadBtn = AddButtonAfter(saveBtn, "Load",
-        function() if selected ~= "" then ns.API.LoadProfile(selected) end end, 80,
-        "Apply the selected profile's settings.")
-    local copyBtn = AddButtonAfter(loadBtn, "Copy...",
-        function() if selected ~= "" then StaticPopup_Show("COMBATRETICLE_COPY_PROFILE", selected, nil, selected) end end, 90,
-        "Duplicate the selected profile under a new name.")
+    -- Action row: Save as new... / Update / Copy... / Delete
+    local saveBtn = AddButton("Save as new...",
+        function() StaticPopup_Show("COMBATRETICLE_SAVE_PROFILE") end, 110,
+        "Snapshot the current settings under a new name.")
+    local updateBtn = AddButtonAfter(saveBtn, "Update",
+        function() if selected ~= "" then ns.API.SaveProfile(selected) end end, 85,
+        "Overwrite the loaded profile with the current settings.")
+    local copyBtn = AddButtonAfter(updateBtn, "Copy...",
+        function() if selected ~= "" then StaticPopup_Show("COMBATRETICLE_COPY_PROFILE", selected, nil, selected) end end, 85,
+        "Duplicate the loaded profile under a new name.")
     AddButtonAfter(copyBtn, "Delete",
-        function() if selected ~= "" then StaticPopup_Show("COMBATRETICLE_DELETE_PROFILE", selected, nil, selected) end end, 90,
-        "Delete the selected profile.")
+        function() if selected ~= "" then StaticPopup_Show("COMBATRETICLE_DELETE_PROFILE", selected, nil, selected) end end, 85,
+        "Delete the loaded profile.")
 end
 
 -- ===========================================================================

@@ -1,5 +1,24 @@
 # CombatReticle changelog
 
+## 1.3.1
+
+### Profiles
+
+- Choosing a profile from the dropdown now loads it immediately.
+  Previously it only highlighted the name and waited for a separate
+  Load click, which made it look like a profile was applied when it
+  wasn't - so edits seemed to leak across profiles.
+- The dropdown always shows the profile that is actually loaded (or
+  "(select a profile)" when none is), so what you see is what's active.
+- Buttons are now Save as new... / Update / Copy... / Delete. The old
+  Load button is gone; the new Update button overwrites the loaded
+  profile with the current look.
+
+### Compatibility
+
+- Marked compatible with patch 12.1. Dropped the 12.0.5 tag; still
+  covers 12.0.7.
+
 ## 1.3.0
 
 ### Saved profiles

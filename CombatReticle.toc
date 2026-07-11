@@ -1,8 +1,8 @@
-## Interface: 120005, 120007
+## Interface: 120007, 120100
 ## Title: CombatReticle
 ## Notes: Center-screen reticle with 40 textures, color tinting, combat-only mode, custom WoW icons, and a minimap button.
 ## Author: WowDonf
-## Version: v1.3.0
+## Version: v1.3.1
 ## X-Curse-Project-ID: 1552028
 ## X-Wago-ID: ZKxZk3Nk
 ## SavedVariables: CombatReticleDB
