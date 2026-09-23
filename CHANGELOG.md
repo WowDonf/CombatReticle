@@ -1,5 +1,32 @@
 # CombatReticle changelog
 
+## 1.4.0
+
+### Rotation
+
+- New Rotation slider (0-359 degrees) in the Appearance section, plus
+  `/cr rotation <degrees>`. Turns the Crosshair into an X, tilts the
+  chevron sets, and so on. Saved with profiles.
+
+### Hide in pet battles
+
+- New "Hide in pet battles" toggle (on by default). The reticle used to
+  stay on screen over the pet battle camera.
+
+### Profiles
+
+- Loading a profile saved by an older version now sets any setting that
+  profile predates (rotation, the pet battle rule) to its default, rather
+  than leaving whatever was active.
+
+### Compatibility
+
+- Marked compatible with patch 12.1.5. Dropped the 12.0.7 tag; still
+  covers 12.1.
+- No compatibility fixes were needed: the deprecated helper aliases removed
+  in 12.1.5 (currency, item, socket, LFG, pet, PvP, sound and trade) are
+  not used by this addon or its bundled libraries.
+
 ## 1.3.1
 
 ### Profiles

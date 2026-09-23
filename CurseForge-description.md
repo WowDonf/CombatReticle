@@ -22,10 +22,12 @@ texture at screen center for third-person / action-cam play.
 - Use any `Interface\Icons` texture as the reticle instead (e.g.
   `Ability_Mount_RidingHorse`).
 - Blizzard color picker for tinting (wheel, RGB, hex, opacity).
-- Sliders + stepper buttons for size (16-256 px), opacity, X/Y offset.
-- Floating, draggable options window with a 6x5 visual icon grid.
+- Sliders + stepper buttons for size (16-256 px), opacity, rotation
+  (0-359 degrees), X/Y offset.
+- Floating, draggable options window with a visual icon grid.
   Doesn't sit on top of the reticle while you configure it.
-- Show-only-in-combat (off by default) and hide-on-vehicle toggles.
+- Show-only-in-combat (off by default), plus hide-on-vehicle,
+  hide-while-mounted, and hide-in-pet-battle toggles (all on by default).
 - Saved profiles: store the current look under a name and load it any
   time. Shared across all your characters.
 - Minimap button + addon compartment entry. Left-click opens options,

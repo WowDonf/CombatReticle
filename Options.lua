@@ -260,7 +260,7 @@ local function MarkChanged()
 end
 
 -- ---------------------------------------------------------------------------
--- Reticle icon grid - 30 buttons in a 6x5 layout. Tooltip on hover, yellow
+-- Reticle icon grid - one button per preset, 6 per row. Tooltip on hover, yellow
 -- border highlight on the currently selected one.
 -- ---------------------------------------------------------------------------
 local function AddIconGrid()
@@ -398,6 +398,11 @@ AddSlider("Opacity", 0, 1, 0.01,
     function(v) CombatReticleDB.alpha = v; MarkChanged() end,
     "%.2f")
 
+AddSlider("Rotation", 0, 359, 1,
+    function() return db().rotation end,
+    function(v) CombatReticleDB.rotation = v; MarkChanged() end,
+    "%d\194\176")   -- degree sign
+
 local colorBtn = AddButton("Pick color...",
     function() if ns.API.ShowColorPicker then ns.API.ShowColorPicker() end end,
     160,
@@ -476,6 +481,14 @@ AddCheckbox("Hide while mounted",
     function() return db().hideWhileMounted end,
     function(v)
         CombatReticleDB.hideWhileMounted = v
+        if ns.API.ApplyHideRule then ns.API.ApplyHideRule() else MarkChanged() end
+    end)
+
+AddCheckbox("Hide in pet battles",
+    "Hide the reticle for the duration of a pet battle.",
+    function() return db().hideInPetBattle end,
+    function(v)
+        CombatReticleDB.hideInPetBattle = v
         if ns.API.ApplyHideRule then ns.API.ApplyHideRule() else MarkChanged() end
     end)
 

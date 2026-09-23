@@ -20,9 +20,11 @@ built-in WoW icon.
 - Use any `Interface\Icons` texture as the reticle instead.
 - Blizzard color picker (wheel, RGB, hex, opacity). Cancel restores the
   previous color.
-- Sliders with stepper buttons for size (16-256 px), opacity, and X/Y
-  offset. Click steppers to nudge, hold to repeat.
-- Show-only-in-combat (off by default) and hide-on-vehicle toggles.
+- Sliders with stepper buttons for size (16-256 px), opacity, rotation
+  (0-359 degrees), and X/Y offset. Click steppers to nudge, hold to
+  repeat.
+- Show-only-in-combat (off by default), plus hide-on-vehicle,
+  hide-while-mounted, and hide-in-pet-battle toggles (all on by default).
 - Saved profiles: store the current look under a name and load it any
   time. Profiles are shared across all your characters.
 - Minimap button + addon compartment entry. Left-click options,
@@ -46,6 +48,7 @@ Search "CombatReticle" on CurseForge or Wago, or copy the
 | `/cr icon <name>`           | use `Interface\Icons\<name>` as the reticle |
 | `/cr icon clear`            | revert to the selected preset               |
 | `/cr size <n>`              | size in pixels (16-256)                     |
+| `/cr rotation <deg>`        | rotate the texture (0-359 degrees)          |
 | `/cr color`                 | open the color picker                       |
 | `/cr color white`           | reset tint to white                         |
 | `/cr combat on` / `off`     | toggle combat-only                          |

@@ -1,7 +1,7 @@
 -- =============================================================================
 -- CombatReticle - main module
 --
--- Center-screen reticle for Midnight (12.0+). Picks one of 20 bundled textures
+-- Center-screen reticle for Midnight (12.0+). Picks one of 40 bundled textures
 -- or any built-in WoW icon, sizes/colors/positions it, and controls when it's
 -- visible (always / combat-only / hidden in vehicles).
 --
@@ -90,6 +90,8 @@ ns.DEFAULTS = {
     xOffset            = 0,
     yOffset            = 0,
     alpha              = 1.0,
+    -- Texture rotation in whole degrees (0-359). 0 = as drawn.
+    rotation           = 0,
     colorR             = 1,
     colorG             = 1,
     colorB             = 1,
@@ -98,6 +100,7 @@ ns.DEFAULTS = {
     combatOnly         = false,
     hideOnVehicle      = true,
     hideWhileMounted   = true,
+    hideInPetBattle    = true,
     -- LibDBIcon persists its angle and hide flag here.
     minimap            = { hide = false, minimapPos = 220 },
     -- Floating options window position; restored on each open. Defaults to
@@ -116,8 +119,8 @@ ns.DEFAULTS = {
 -- shallow copy is a complete copy.
 ns.PROFILE_KEYS = {
     "reticleId", "customIconPath", "size", "xOffset", "yOffset",
-    "alpha", "colorR", "colorG", "colorB",
-    "combatOnly", "hideOnVehicle", "hideWhileMounted",
+    "alpha", "colorR", "colorG", "colorB", "rotation",
+    "combatOnly", "hideOnVehicle", "hideWhileMounted", "hideInPetBattle",
 }
 
 -- Recursively fill any missing default keys without clobbering existing values.
@@ -158,9 +161,10 @@ ns.API.GetActiveTexture = GetActiveTexture
 -- Frame
 -- ---------------------------------------------------------------------------
 local reticle
-local inCombat  = false
-local onVehicle = false
-local mounted   = false
+local inCombat    = false
+local onVehicle   = false
+local mounted     = false
+local inPetBattle = false
 
 local function EnsureFrame()
     if reticle then return reticle end
@@ -187,7 +191,11 @@ local function ApplyVisuals()
     f:SetSize(size, size)
     f:ClearAllPoints()
     f:SetPoint("CENTER", UIParent, "CENTER", db.xOffset or 0, db.yOffset or 0)
-    f.texture:SetTexture(GetActiveTexture())
+    -- CLAMPTOBLACKADDITIVE fills whatever a rotation exposes outside the
+    -- texture with transparent black, so rotated icons don't smear their
+    -- edge pixels into the corners.
+    f.texture:SetTexture(GetActiveTexture(), "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+    f.texture:SetRotation(math.rad((tonumber(db.rotation) or 0) % 360))
     f.texture:SetAlpha(math.max(0, math.min(1, tonumber(db.alpha) or 1)))
     f.texture:SetVertexColor(db.colorR or 1, db.colorG or 1, db.colorB or 1)
 end
@@ -233,6 +241,7 @@ local function ShouldShow()
     if optionsOpen then return true end
     if onVehicle and db.hideOnVehicle then return false end
     if mounted and db.hideWhileMounted then return false end
+    if inPetBattle and db.hideInPetBattle then return false end
     if db.combatOnly and not inCombat then return false end
     return true
 end
@@ -249,16 +258,17 @@ local function Refresh()
 end
 ns.API.Refresh = Refresh
 
--- Called by visibility-rule checkboxes (hideOnVehicle, hideWhileMounted) so
--- toggling gives instant feedback while you're mounted/on a vehicle. If the
--- rule is currently met, hide immediately and cancel any in-flight preview;
--- otherwise fall back to the normal preview+refresh path used for visual
--- changes.
+-- Called by visibility-rule checkboxes (hideOnVehicle, hideWhileMounted,
+-- hideInPetBattle) so toggling gives instant feedback. If the rule is
+-- currently met (on a vehicle, mounted, mid pet battle), hide immediately
+-- and cancel any in-flight preview; otherwise fall back to the normal
+-- preview+refresh path used for visual changes.
 ns.API.ApplyHideRule = function()
     if not reticle then return end
     local db = CombatReticleDB
     local hide = (onVehicle and db.hideOnVehicle)
               or (mounted and db.hideWhileMounted)
+              or (inPetBattle and db.hideInPetBattle)
     if hide then
         previewUntil = 0
         reticle:Hide()
@@ -268,19 +278,33 @@ ns.API.ApplyHideRule = function()
     end
 end
 
--- Safety ticker. Every second, re-poll the combat / vehicle state in case
--- we missed a UNIT_ENTERED_VEHICLE, UNIT_EXITED_VEHICLE, PLAYER_REGEN_*,
--- or similar event during a loading screen or camera transition. If the
--- reticle's actual shown state disagrees with what ShouldShow() says it
--- should be, force-correct it. Cheap (~1Hz, no allocations) and exactly
--- what catches the "camera snaps and the icon vanishes" symptom.
+local function IsInPetBattle()
+    return (C_PetBattles and C_PetBattles.IsInBattle and C_PetBattles.IsInBattle()) or false
+end
+
+-- Re-read every piece of volatile state the visibility rules depend on.
+-- Returns true if anything changed since the last poll.
+local function PollState()
+    local newInCombat    = InCombatLockdown() or false
+    local newOnVehicle   = UnitInVehicle("player") or false
+    local newMounted     = IsMounted() or false
+    local newInPetBattle = IsInPetBattle()
+    local changed = newInCombat ~= inCombat or newOnVehicle ~= onVehicle
+                 or newMounted ~= mounted or newInPetBattle ~= inPetBattle
+    inCombat, onVehicle, mounted, inPetBattle = newInCombat, newOnVehicle, newMounted, newInPetBattle
+    return changed
+end
+
+-- Safety ticker. Every second, re-poll the combat / vehicle / pet battle
+-- state in case we missed a UNIT_ENTERED_VEHICLE, UNIT_EXITED_VEHICLE,
+-- PLAYER_REGEN_*, PET_BATTLE_*, or similar event during a loading screen or
+-- camera transition. If the reticle's actual shown state disagrees with what
+-- ShouldShow() says it should be, force-correct it. Cheap (~1Hz, no
+-- allocations) and exactly what catches the "camera snaps and the icon
+-- vanishes" symptom.
 local function SafetyTick()
     if not reticle then return end
-    local newInCombat  = InCombatLockdown() or false
-    local newOnVehicle = UnitInVehicle("player") or false
-    local newMounted   = IsMounted() or false
-    if newInCombat ~= inCombat or newOnVehicle ~= onVehicle or newMounted ~= mounted then
-        inCombat, onVehicle, mounted = newInCombat, newOnVehicle, newMounted
+    if PollState() then
         Refresh()
         return
     end
@@ -530,11 +554,14 @@ ns.API.LoadProfile = function(name)
     name = TrimName(name)
     local p = EnsureProfiles()[name]
     if not p then ns.Print("no profile named '" .. name .. "'."); return false end
+    -- Keys missing from an older profile fall back to their defaults, so a
+    -- profile saved before a setting existed still loads as a complete look
+    -- (customIconPath defaults to "", which keeps it a string downstream).
     for _, k in ipairs(ns.PROFILE_KEYS) do
-        if p[k] ~= nil then CombatReticleDB[k] = p[k] end
+        local v = p[k]
+        if v == nil then v = ns.DEFAULTS[k] end
+        CombatReticleDB[k] = v
     end
-    -- customIconPath must stay a string for downstream code.
-    if CombatReticleDB.customIconPath == nil then CombatReticleDB.customIconPath = "" end
     CombatReticleDB.activeProfile = name
     Refresh()
     if ns.API.RefreshOptions then ns.API.RefreshOptions() end
@@ -599,6 +626,8 @@ f:RegisterEvent("PLAYER_REGEN_DISABLED")
 f:RegisterEvent("PLAYER_REGEN_ENABLED")
 f:RegisterEvent("UNIT_ENTERED_VEHICLE")
 f:RegisterEvent("UNIT_EXITED_VEHICLE")
+f:RegisterEvent("PET_BATTLE_OPENING_START")
+f:RegisterEvent("PET_BATTLE_CLOSE")
 -- These don't always fire but when they do, we want to re-apply visuals
 -- because they can leave the reticle stranded mid-transition.
 f:RegisterEvent("UI_SCALE_CHANGED")
@@ -616,9 +645,7 @@ f:SetScript("OnEvent", function(_, event, arg1)
         end
 
     elseif event == "PLAYER_LOGIN" or event == "PLAYER_ENTERING_WORLD" then
-        inCombat  = InCombatLockdown() or false
-        onVehicle = UnitInVehicle("player") or false
-        mounted   = IsMounted() or false
+        PollState()
         Refresh()
 
     elseif event == "PLAYER_REGEN_DISABLED" then
@@ -629,6 +656,10 @@ f:SetScript("OnEvent", function(_, event, arg1)
         if arg1 == "player" then onVehicle = true; Refresh() end
     elseif event == "UNIT_EXITED_VEHICLE" then
         if arg1 == "player" then onVehicle = false; Refresh() end
+    elseif event == "PET_BATTLE_OPENING_START" then
+        inPetBattle = true; Refresh()
+    elseif event == "PET_BATTLE_CLOSE" then
+        inPetBattle = false; Refresh()
 
     elseif event == "UI_SCALE_CHANGED"
         or event == "DISPLAY_SIZE_CHANGED"
@@ -637,9 +668,7 @@ f:SetScript("OnEvent", function(_, event, arg1)
         -- Re-poll volatile state along with the refresh, in case the event
         -- fired while we were in a transition that also moved us in/out of
         -- combat or a vehicle (loading screens are notorious for this).
-        inCombat  = InCombatLockdown() or false
-        onVehicle = UnitInVehicle("player") or false
-        mounted   = IsMounted() or false
+        PollState()
         Refresh()
     end
 end)
@@ -665,6 +694,7 @@ SlashCmdList.COMBATRETICLE = function(input)
         print("  |cffffff00/cr icon <name>|r    use a built-in WoW icon (Interface\\Icons\\<name>)")
         print("  |cffffff00/cr icon clear|r     revert to preset")
         print("  |cffffff00/cr size <n>|r       size in pixels (16-256)")
+        print("  |cffffff00/cr rotation <deg>|r rotate the texture (0-359)")
         print("  |cffffff00/cr combat on|off|r  show only in combat")
         print("  |cffffff00/cr minimap on|off|r show minimap icon")
         print("  |cffffff00/cr list|r           list all reticle presets")
@@ -704,6 +734,11 @@ SlashCmdList.COMBATRETICLE = function(input)
         local n = tonumber(rest)
         if not n then Msg("usage: /cr size <n>"); return end
         CombatReticleDB.size = math.max(16, math.min(256, n))
+
+    elseif cmd == "rotation" or cmd == "rotate" then
+        local n = tonumber(rest)
+        if not n then Msg("usage: /cr rotation <degrees>"); return end
+        CombatReticleDB.rotation = math.floor(n + 0.5) % 360
 
     elseif cmd == "combat" then
         CombatReticleDB.combatOnly = (rest == "on" or rest == "1" or rest == "true")

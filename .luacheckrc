@@ -39,8 +39,8 @@ read_globals = {
     "SquareButton_SetIcon",   -- icon helper for UIPanelSquareButton
     -- Combat / protected-frame state
     "InCombatLockdown",
-    -- Vehicle / mount state (combat-only visibility rules)
-    "UnitInVehicle", "IsMounted",
+    -- Vehicle / mount / pet battle state (visibility rules)
+    "UnitInVehicle", "IsMounted", "C_PetBattles",
     -- Timing
     "C_Timer",
     -- Tables / misc
